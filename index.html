@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>용접누락 방지 검출</title>
+  <meta name="description" content="협력사 내부용접 검사성적서(엑셀)를 올리면 머리칸·결과표·위치별 사진을 읽어 규칙으로 점검하고, 사람이 위치별로 용접누락을 판정해 용접사별로 누적하는 브라우저 도구(1단계 시연판)">
+  <meta name="robots" content="noindex">
+  <!-- 폐쇄망 보장: 외부로 연결할 수 있는 곳은 AI 도우미의 api.openai.com 뿐(폐쇄망 모드에서는 그마저 부르지 않음) -->
+  <meta http-equiv="Content-Security-Policy" content="connect-src https://api.openai.com; object-src 'none'; base-uri 'none'">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">본문으로 건너뛰기</a>
+  <header class="site-header">
+    <div class="inner header-inner">
+      <a class="brand" href="#/upload">
+        <span class="brand-name">용접누락 방지 검출</span>
+        <span class="brand-sub">내부용접 검사성적서 · 규칙 점검 · 위치별 사진 판정 · 용접사별 누적</span>
+      </a>
+      <nav class="nav" id="nav" aria-label="주 메뉴"></nav>
+    </div>
+  </header>
+
+  <div id="netBadge" class="net-badge" role="note">폐쇄망 모드 · 이 화면은 어떤 데이터도 외부로 보내지 않습니다.</div>
+  <div id="sampleBanner" class="sample-banner" hidden>예시 성적서가 들어 있습니다. 가상 협력사·가명(용접사A 등)·코드로 그린 용접 그림으로 만든 시연용 파일이며 실제 자료가 아닙니다.</div>
+  <div id="storeBanner" class="store-banner" hidden></div>
+
+  <main id="main" class="inner main" tabindex="-1"></main>
+
+  <footer class="site-footer">
+    <div class="inner">1단계 시연판 · 판정은 사람이 확정합니다(AI 는 제안만) · 사진 원본은 저장하지 않습니다 · 이 화면은 어떤 데이터도 외부로 보내지 않습니다(폐쇄망 모드 기본) — <a href="#/settings">폐쇄망 사용법·저장 방식</a></div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <dialog id="dialog" class="dialog">
+    <form method="dialog" class="dialog-body">
+      <h2 id="dialogTitle"></h2>
+      <div id="dialogContent"></div>
+      <div class="dialog-actions" id="dialogActions"></div>
+    </form>
+  </dialog>
+
+  <!-- 파일(file://)로 열어도 돌도록 module 이 아닌 일반 스크립트로, 외부 CDN 없이 불러옵니다 -->
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="js/logic.js"></script>
+  <script src="js/workbook.js"></script>
+  <script src="js/sample-data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

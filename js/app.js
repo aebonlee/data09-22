@@ -4,7 +4,8 @@
  *   #/check     자동 점검       규칙으로 찾은 문제(검사일·빈칸·사진 누락·OK만 기입·각장·같은 사진)
  *   #/review    사진 판정       위치별 가이드 ↔ 실제 사진, 사람이 양호 / 누락 의심 / 판독 불가 확정
  *   #/welders   용접사별 누적   판정한 위치 수 · 누락 의심 수 · 비율, 협력사·기종 거르기, CSV
- *   #/settings  설정·데이터     폐쇄망 모드, AI 키, 백업·복원, 저장 방식
+ *   #/labels    라벨 사진       2단계용 정상/누락 라벨 사진 폴더의 이름 점검 · 위치별 개수 · 라벨 표 CSV
+ *   #/settings  설정·데이터     폐쇄망 모드(기본 꺼짐, 2026-09-30), AI 키, 백업·복원, 저장 방식
  */
 (function () {
   'use strict';
@@ -41,7 +42,8 @@
       el.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c);
     }
   }
-  function offline() { return db.settings.offline_mode !== false; }
+  // 폐쇄망 모드: 2026-09-30 제출자 답(「폐쇄망으로 안 해도 될 듯」)으로 기본 꺼짐. 설정에서 켜면 켬.
+  function offline() { return db.settings.offline_mode === true; }
   function save() {
     gcThumbs();
     db._sample = db.reports.some(function (r) { return /^예시_/.test(r.fileName); });
@@ -66,7 +68,7 @@
     b.className = 'net-badge' + (offline() ? '' : ' ai-on');
     b.textContent = offline()
       ? '폐쇄망 모드 · 이 화면은 어떤 데이터도 외부로 보내지 않습니다. 성적서·사진은 이 PC 브라우저 안에서만 읽습니다.'
-      : '폐쇄망 모드 꺼짐 · 「AI 제안 받기」를 누를 때만 그 위치 사진이 OpenAI 로 전송됩니다.';
+      : '성적서·사진은 이 PC 브라우저 안에서만 읽습니다 · 폐쇄망 모드 꺼짐(기본) — 「AI 제안 받기(내 키)」를 누를 때만 그 위치 사진이 OpenAI 로 갑니다.';
   }
   function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
   var toastTimer;
@@ -404,11 +406,26 @@
             save(); toast('위치 ' + p.pos + ' — ' + L.VERDICT[v] + '(으)로 판정했습니다.'); render();
           } }, L.VERDICT[v]);
         })),
+      peerBox(rep, p),
       memo,
       hist.length > 1 ? h('p', { class: 'note' }, '판정 기록 ' + hist.length + '건 · 마지막 ' + hist[hist.length - 1].at.slice(0, 16).replace('T', ' ')) : null,
       sugBox);
     if (!offline()) card.appendChild(aiTools(rep, p, card, sugBox));
     return card;
+  }
+  // 같은 위치 다른 제품 사진 — 2026-09-30 확인된 불량(Serial 끝 60, 위치 B·E)은 규칙으로는 다른 Serial 과
+  // 똑같이 보였고, 같은 위치 사진을 나란히 놓아야 윗면 이음매의 비드 차이가 보였습니다.
+  function peerBox(rep, p) {
+    if (!p.photos.length) return null;
+    var peers = L.peerPhotos(db.reports, rep, p.pos);
+    if (!peers.length) return null;
+    return h('details', { class: 'peer-box' },
+      h('summary', null, '같은 위치 다른 제품 사진과 비교 (' + peers.length + '장)'),
+      h('p', { class: 'note' }, '같은 기종·부품의 다른 Serial 에서 같은 위치 사진입니다. 이음매마다 비드(볼록한 용접 줄)가 같은 자리에 있는지 견주어 보세요.'),
+      h('div', { class: 'peer-grid' }, peers.map(function (x) {
+        var t = L.str(x.rep.header && x.rep.header.serial) || x.rep.sheetName;
+        return h('figure', null, thumbImg(x.rep, x.photo, t + ' · 위치 ' + p.pos, 'photo'), h('figcaption', null, t));
+      })));
   }
   // AI 도우미 — 폐쇄망 모드가 꺼져 있을 때만. 제안만 보여 주고 확정은 사람이 판정 단추로.
   function aiTools(rep, p, card, sugBox) {
@@ -485,21 +502,64 @@
     main.appendChild(h('div', { class: 'table-wrap' }, h('table', { class: 'list' },
       h('thead', null, h('tr', null, h('th', null, '용접사'), h('th', null, '협력사'), h('th', null, '기종'), h('th', null, '성적서'), h('th', null, '판정한 위치'), h('th', null, '양호'), h('th', null, '누락 의심'), h('th', null, '판독 불가'), h('th', null, '누락 의심 비율'), h('th', null, '누락 의심 성적서'))), tb)));
     if (!rows.length) main.appendChild(h('p', { class: 'note' }, '조건에 맞는 성적서가 없습니다.'));
-    main.appendChild(h('p', { class: 'note' }, '용접사 이름을 사람별로 모으는 것은 개인정보 처리입니다. 회사 기준을 확인한 뒤 쓰시고(기획서 10장 질문 4), 필요하면 이름 대신 사번·내부 번호로 적도록 양식을 바꾸는 방법이 있습니다.'));
+    main.appendChild(h('p', { class: 'note' }, '용접사 실명으로 누적해도 된다고 제출자가 확인했습니다(2026-09-30). 누적 결과는 이 PC 브라우저와 내려받은 CSV 에만 남습니다.'));
   }
   function uniqSorted(a) { return a.filter(function (x, i) { return x && a.indexOf(x) === i; }).sort(); }
+
+  // ── #/labels 라벨 사진 (2단계 준비) ──────────────────────────────
+  // 사진은 읽지 않고 파일 이름·폴더 이름만 봅니다. 어디에도 저장·전송하지 않습니다.
+  function pageLabels() {
+    main.appendChild(h('div', { class: 'page-head' }, h('h1', null, '라벨 사진 받기')));
+    main.appendChild(h('div', { class: 'card', id: 'labelGuide' }, h('h2', null, '보내 주실 폴더 모양'),
+      h('p', null, '2단계(AI 판독 파일럿)의 정답표가 될 사진입니다. 폴더 이름이 라벨이고, 파일 이름에 기종·Serial·위치를 적어 주세요.'),
+      h('pre', { class: 'tree' }, '라벨사진_20261001_김무연/\n  정상/   VDK14W_SJ25D58_B.jpg\n          VDK14W_SJ25D58_E.jpg\n  누락/   VDK14W_SJ25D60_B.jpg\n          VDK14W_SJ25D60_E_1_윗면비드없음.jpg\n  경계/   VDK14W_SJ25D57_E_어두움.jpg'),
+      h('ul', null,
+        h('li', null, h('b', null, '폴더 = 라벨: '), '「정상」 · 「누락」 · 「경계」(사람도 판단이 어려운 사진 — 어두움·그을음·초점) 세 가지만 써 주세요. 하위 폴더가 더 있어도 됩니다.'),
+        h('li', null, h('b', null, '파일 이름 = 기종_Serial_위치'), ' — 위치는 A~F(성적서) 또는 1·2(공정 검사 보고서). 같은 위치에 여러 장이면 뒤에 _1, _2. 그 뒤에 _메모(예: 윗면비드없음)를 붙여도 됩니다.'),
+        h('li', null, h('b', null, '한 장 = 한 위치: '), '성적서에서 꺼낸 사진이든 새로 찍은 사진이든, 한 파일에 한 위치만 담아 주세요.'),
+        h('li', null, h('b', null, '먼저 B·E: '), '사고가 난 위치입니다. Serial 끝 60 의 B·E 는 「누락」에 넣어 주시고, 같은 기종 다른 Serial 의 B·E 정상 사진도 함께 주시면 비교 기준이 됩니다.')),
+      h('p', { class: 'note' }, '자세한 안내: docs/라벨사진_보내는_방법.md. 받은 사진은 공개 저장소에 올리지 않습니다.')));
+    var input = h('input', { type: 'file', multiple: true, webkitdirectory: true, 'aria-label': '라벨 사진 폴더 고르기' });
+    var out = h('div');
+    input.addEventListener('change', function () {
+      var paths = Array.prototype.map.call(input.files, function (f) { return f.webkitRelativePath || f.name; });
+      input.value = '';
+      showLabels(out, paths);
+    });
+    main.appendChild(h('div', { class: 'card' }, h('h2', null, '폴더 점검'),
+      h('p', { class: 'note' }, '받은 폴더(또는 보내기 전 폴더)를 골라 주세요. 사진 내용은 읽지 않고 이름만 봅니다. 저장하지 않으며 밖으로 보내지 않습니다.'),
+      h('div', { class: 'btn-row' }, h('span', { class: 'btn btn-primary file-btn' }, '폴더 고르기', input))));
+    main.appendChild(out);
+    if (ui.labelPaths) showLabels(out, ui.labelPaths);
+  }
+  function showLabels(out, paths) {
+    ui.labelPaths = paths;
+    var s = L.labelSummary(paths);
+    out.textContent = '';
+    append(out, h('div', { class: 'tiles' }, tile(s.totals.good, '정상'), tile(s.totals.suspect, '누락', s.totals.suspect ? 'bad' : ''), tile(s.totals.unclear, '경계'), tile(s.bad.length, '이름 확인 필요', s.bad.length ? 'mid' : '')));
+    var poss = Object.keys(s.table).sort();
+    if (poss.length) append(out, h('div', { class: 'table-wrap' }, h('table', { class: 'list' },
+      h('thead', null, h('tr', null, h('th', null, '위치'), h('th', null, '정상'), h('th', null, '누락'), h('th', null, '경계'))),
+      h('tbody', null, poss.map(function (p) { var r = s.table[p]; return h('tr', null, h('td', null, h('b', null, p)), h('td', { class: 'num' }, r.good), h('td', { class: 'num' }, r.suspect), h('td', { class: 'num' }, r.unclear)); })))));
+    if (s.serials.length) append(out, h('p', { class: 'note' }, '기종·Serial ' + s.serials.length + '개: ' + s.serials.join(', ')));
+    if (s.conflicts.length) append(out, h('div', { class: 'alert warn' }, '같은 Serial·위치에 라벨이 엇갈린 사진이 있습니다(한 자리에 여러 장이면 한 장씩 라벨이 다를 수는 있습니다): ',
+      s.conflicts.map(function (c) { return c.model + ' ' + c.serial + ' 위치 ' + c.pos + '(' + c.labels.join('·') + ')'; }).join(', ')));
+    if (s.bad.length) append(out, h('div', { class: 'card' }, h('h2', null, '이름을 확인해 주세요'), h('ul', { class: 'finds' }, s.bad.map(function (x) { return h('li', null, h('b', null, x.path), ' — ', x.problems.join(' · ')); }))));
+    if (s.ok.length) append(out, h('div', { class: 'btn-row' }, h('button', { type: 'button', class: 'btn', onclick: function () { download('라벨표_' + stamp() + '.csv', new Blob([L.labelCsv(s)], { type: 'text/csv;charset=utf-8' })); } }, '라벨 표 CSV 내려받기')));
+    if (!paths.length) append(out, h('p', { class: 'note' }, '고른 폴더에 파일이 없습니다.'));
+  }
 
   // ── #/settings 설정·데이터 ───────────────────────────────────
   function pageSettings() {
     main.appendChild(h('div', { class: 'page-head' }, h('h1', null, '설정·데이터')));
     var offChk = h('input', { type: 'checkbox', checked: offline() });
-    offChk.addEventListener('change', function () { db.settings.offline_mode = offChk.checked; save(); toast(offChk.checked ? '폐쇄망 모드를 켰습니다. AI 도우미가 숨겨집니다.' : '폐쇄망 모드를 껐습니다. 사진 판정 화면에 AI 도우미가 나타납니다.'); render(); });
+    offChk.addEventListener('change', function () { db.settings.offline_mode = offChk.checked; db.settings.offline_user_set = true; save(); toast(offChk.checked ? '폐쇄망 모드를 켰습니다. AI 도우미가 숨겨집니다.' : '폐쇄망 모드를 껐습니다. 사진 판정 화면에 AI 도우미가 나타납니다.'); render(); });
     var card = h('div', { class: 'card', id: 'offlineCard' }, h('h2', null, '폐쇄망 모드 · 외부 전송'),
-      h('label', { class: 'check-line' }, offChk, h('span', null, h('b', null, '폐쇄망 모드 (기본 켬)'), h('br'), '켜 두면 이 화면은 어떤 데이터도 밖으로 보내지 않고, AI 도우미(요청문 복사·내 키로 자동 제안)를 숨깁니다.')));
+      h('label', { class: 'check-line' }, offChk, h('span', null, h('b', null, '폐쇄망 모드 (기본 꺼짐)'), h('br'), '인터넷 없는 사내 PC 나 사진을 회사 밖으로 보내면 안 되는 경우에 켜 주세요. 켜 두면 이 화면은 어떤 데이터도 밖으로 보내지 않고, AI 도우미(요청문 복사·내 키로 자동 제안)를 숨깁니다. 2026-09-30 제출자 답(「폐쇄망으로 안 해도 될 듯」)으로 기본값을 꺼짐으로 바꿨습니다.')));
     if (!offline()) {
       var key = h('input', { type: 'password', value: S.getKey(), placeholder: 'sk-…', autocomplete: 'off', 'aria-label': 'OpenAI API 키' });
       var model = h('input', { type: 'text', value: db.settings.ai_model || 'gpt-4o-mini', 'aria-label': '모델' });
-      append(card, h('div', { class: 'alert warn' }, '폐쇄망 모드가 꺼져 있습니다. 「AI 제안 받기」를 누르면 그 위치의 가이드·사진과 요청문이 OpenAI 로 전송됩니다. 협력사 사진을 회사 밖으로 보내도 되는지 먼저 확인해 주세요.'),
+      append(card, h('div', { class: 'alert info' }, '폐쇄망 모드가 꺼져 있습니다. 성적서·사진은 여전히 이 브라우저 안에서만 읽습니다. 밖으로 나가는 것은 「AI 제안 받기(내 키)」를 누른 그 위치의 가이드·사진과 요청문뿐이고(OpenAI), 누르지 않으면 아무것도 보내지 않습니다.'),
         h('div', { class: 'form-grid' }, field('내 OpenAI API 키 (이 브라우저에만 저장, 백업에 안 들어감)', key, 'span-2'), field('모델', model)),
         h('div', { class: 'btn-row' }, h('button', { type: 'button', class: 'btn btn-primary', onclick: function () { S.setKey(key.value.trim()); db.settings.ai_model = model.value.trim() || 'gpt-4o-mini'; save(); toast('저장했습니다.'); } }, '키 저장'),
           h('button', { type: 'button', class: 'btn', onclick: function () { S.setKey(''); key.value = ''; toast('키를 지웠습니다.'); } }, '키 지우기')));
@@ -535,13 +595,13 @@
       h('ol', { class: 'steps' },
         h('li', null, '인터넷이 되는 PC 에서 이 저장소를 「Code → Download ZIP」으로 받습니다.'),
         h('li', null, 'ZIP 을 사내 PC 로 옮겨 풀고, 폴더의 index.html 을 크롬·엣지로 엽니다(더블클릭).'),
-        h('li', null, '화면 위 띠에 「폐쇄망 모드 · 이 화면은 어떤 데이터도 외부로 보내지 않습니다」가 보이면 그대로 씁니다.'),
+        h('li', null, '「설정·데이터」에서 폐쇄망 모드를 켭니다(기본은 꺼짐). 화면 위 띠에 「폐쇄망 모드 · 이 화면은 어떤 데이터도 외부로 보내지 않습니다」가 보이면 그대로 씁니다.'),
         h('li', null, '결과는 그 PC 브라우저 저장소와 내려받은 CSV·백업 파일에만 남습니다.')),
       h('p', { class: 'note' }, '확인 방법: 개발자 도구(F12) → 네트워크 탭을 연 채로 써 보시면 외부 요청이 없습니다. 코드에서 밖으로 요청하는 곳은 폐쇄망 모드를 껐을 때의 「AI 제안 받기」(js/ai.js) 한 곳뿐이고, index.html 의 보안 정책(Content-Security-Policy)이 그 밖의 주소로 연결하는 것을 막습니다. test/logic.test.mjs 의 「폐쇄망」 검사가 이를 확인합니다.')));
   }
 
   // ── 라우팅 ────────────────────────────────────────────────
-  var ROUTES = [['upload', '성적서 올리기', pageUpload], ['check', '자동 점검', pageCheck], ['review', '사진 판정', pageReview], ['welders', '용접사별 누적', pageWelders], ['settings', '설정·데이터', pageSettings]];
+  var ROUTES = [['upload', '성적서 올리기', pageUpload], ['check', '자동 점검', pageCheck], ['review', '사진 판정', pageReview], ['welders', '용접사별 누적', pageWelders], ['labels', '라벨 사진', pageLabels], ['settings', '설정·데이터', pageSettings]];
   function render() {
     var m = /^#\/([a-z]+)(?:\?(.*))?$/.exec(location.hash || '');
     var name = m ? m[1] : 'upload', params = {};

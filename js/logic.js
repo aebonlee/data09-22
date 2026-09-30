@@ -667,12 +667,81 @@
     var reuse = checkReuse(reports, opts), out = {};
     reports.forEach(function (rep) {
       var f = checkReport(rep).concat(reuse[rep.id] || []);
+      // 같은 파일에 작성된 시트가 있으면 빈 시트는 「쓰지 않은 양식」으로 보고 건너뜁니다.
+      // 2026-09-30 제출자 확인: Arm·Boom 시트는 짝이 아니고, 협력사가 만드는 부품에 맞춰 양식을 달리 씁니다.
+      if (f.length === 1 && f[0].code === 'EMPTY_SHEET' && reports.some(function (o) { return o !== rep && o.fileHash === rep.fileHash && o.layout && !isEmptySheet(o); })) {
+        f = [{ level: 'info', code: 'UNUSED_SHEET', pos: '', text: '쓰지 않은 양식 시트로 보고 건너뜁니다' + (rep.part ? '(' + rep.part + ')' : '') + ' — 이 파일의 다른 시트는 작성돼 있습니다. 협력사가 만드는 부품에 맞춰 양식을 달리 쓰므로 빈 시트는 오류가 아닙니다.' }];
+      }
       f.sort(function (a, b) { return LV_ORDER[a.level] - LV_ORDER[b.level]; });
       out[rep.id] = f;
     });
     return out;
   }
   function countLevels(f) { var c = { error: 0, warn: 0, info: 0 }; (f || []).forEach(function (x) { c[x.level]++; }); return c; }
+
+  // ── 같은 위치 다른 제품 사진 (나란히 비교) ──────────────────────
+  // 2026-09-30 확인된 불량(Serial 끝 60, 위치 B·E)은 규칙으로는 다른 Serial 과 똑같이 보였고,
+  // 같은 위치를 다른 Serial 사진과 나란히 놓았을 때에야 윗면 이음매의 비드 차이가 보였습니다.
+  // 같은 양식·부품(Boom/Arm)·기종의 다른 성적서에서 같은 위치 사진을 모읍니다(기종이 비었으면 양식·부품만).
+  function peerPhotos(reports, rep, pos) {
+    var model = str(rep.header && rep.header.model), out = [];
+    reports.forEach(function (o) {
+      if (o.id === rep.id || !o.layout || o.layout !== rep.layout || o.part !== rep.part) return;
+      if (model && str(o.header && o.header.model) && str(o.header.model) !== model) return;
+      var P = o.positions.filter(function (p) { return p.pos === pos; })[0];
+      if (!P) return;
+      P.photos.forEach(function (ph, i) { out.push({ rep: o, pos: pos, photo: ph, i: i }); });
+    });
+    return out;
+  }
+
+  // ── 라벨 사진 세트 받기 (2단계 준비) ─────────────────────────────
+  // 폴더 = 라벨, 파일 이름 = 기종_Serial_위치[_번호][_메모].jpg  (docs/라벨사진_보내는_방법.md)
+  var LABELS = { '정상': 'good', '누락': 'suspect', '경계': 'unclear' };
+  var LABEL_NAME = { good: '정상', suspect: '누락', unclear: '경계' };
+  var PHOTO_EXT = /\.(jpe?g|png|bmp|heic)$/i;
+  function nfc(s) { return typeof s.normalize === 'function' ? s.normalize('NFC') : s; }
+  function parseLabelPath(path) {
+    var parts = nfc(str(path)).replace(/\\/g, '/').split('/').filter(Boolean);
+    var file = parts[parts.length - 1] || '';
+    var r = { path: parts.join('/'), file: file, label: '', model: '', serial: '', pos: '', no: '', memo: '', problems: [], skip: false };
+    if (/^\./.test(file) || /^(thumbs\.db|desktop\.ini)$/i.test(file)) { r.skip = true; return r; }
+    if (!PHOTO_EXT.test(file)) { r.skip = true; r.problems.push('사진 파일(jpg·png·bmp·heic)이 아니어서 세지 않았습니다'); return r; }
+    for (var i = parts.length - 2; i >= 0; i--) { if (LABELS[parts[i]]) { r.label = LABELS[parts[i]]; break; } }
+    if (!r.label) r.problems.push('라벨 폴더(정상 / 누락 / 경계) 안에 있지 않습니다');
+    var t = file.replace(PHOTO_EXT, '').split('_').map(str);
+    r.model = t[0] || ''; r.serial = t[1] || '';
+    var pos = (t[2] || '').toUpperCase();
+    if (/^[A-F]$/.test(pos) || /^[1-9]$/.test(pos)) r.pos = pos;
+    if (!r.model || !r.serial) r.problems.push('파일 이름에 기종·Serial 이 없습니다(기종_Serial_위치.jpg)');
+    else if (!r.pos) r.problems.push('파일 이름 셋째 칸이 위치(A~F 또는 1·2)가 아닙니다');
+    var rest = t.slice(3);
+    if (rest.length && /^\d{1,3}$/.test(rest[0])) r.no = rest.shift();
+    r.memo = rest.join(' ');
+    return r;
+  }
+  // 파일 목록(경로 배열) → 라벨×위치 표, 이름이 틀린 파일, 같은 (Serial, 위치)에 라벨이 엇갈린 것
+  function labelSummary(paths) {
+    var items = paths.map(parseLabelPath).filter(function (x) { return !x.skip || x.problems.length; });
+    var ok = items.filter(function (x) { return !x.skip && !x.problems.length; });
+    var table = {}, byKey = {};
+    ok.forEach(function (x) {
+      var row = table[x.pos] = table[x.pos] || { good: 0, suspect: 0, unclear: 0 };
+      row[x.label]++;
+      var k = x.model + '|' + x.serial + '|' + x.pos;
+      (byKey[k] = byKey[k] || []).push(x);
+    });
+    var conflicts = Object.keys(byKey).filter(function (k) { return uniq(byKey[k].map(function (x) { return x.label; })).length > 1; })
+      .map(function (k) { var a = byKey[k]; return { model: a[0].model, serial: a[0].serial, pos: a[0].pos, labels: uniq(a.map(function (x) { return LABEL_NAME[x.label]; })) }; });
+    var totals = { good: 0, suspect: 0, unclear: 0 };
+    ok.forEach(function (x) { totals[x.label]++; });
+    return { ok: ok, bad: items.filter(function (x) { return x.problems.length; }), table: table, totals: totals, conflicts: conflicts,
+      serials: uniq(ok.map(function (x) { return x.model + ' ' + x.serial; })) };
+  }
+  // 라벨 표 CSV — 2단계 성능표의 정답표로 씁니다
+  function labelCsv(sum) {
+    return toCsv([['경로', '라벨', '기종', 'Serial', '위치', '번호', '메모']].concat(sum.ok.map(function (x) { return [x.path, LABEL_NAME[x.label], x.model, x.serial, x.pos, x.no, x.memo]; })));
+  }
 
   // ── 판정 (사람이 확정) ───────────────────────────────────────
   // judgements 는 덧붙이기만 합니다. 같은 (성적서, 위치)의 마지막 기록이 현재 판정입니다.
@@ -783,7 +852,17 @@
 
   // ── 저장 구조 ───────────────────────────────────────────────
   function emptyDb() {
-    return { app: 'data09-22', v: 1, reports: [], judgements: [], settings: { offline_mode: true, ai_model: 'gpt-4o-mini', keep_thumbs: true } };
+    return { app: 'data09-22', v: 1, reports: [], judgements: [], settings: { offline_mode: false, offline_user_set: false, ai_model: 'gpt-4o-mini', keep_thumbs: true } };
+  }
+  // 저장된 설정 읽기. 폐쇄망 모드는 2026-09-30 제출자 답(「폐쇄망으로 안 해도 될 듯」)에 따라 기본 꺼짐으로 바꿨습니다.
+  // 예전 판은 기본값 「켬」을 그대로 저장했으므로, 사용자가 직접 고른 적이 없으면(offline_user_set 없음) 새 기본값을 따릅니다.
+  function mergeSettings(saved) {
+    var s = emptyDb().settings;
+    if (saved && typeof saved === 'object') Object.assign(s, saved);
+    if (!(saved && saved.offline_user_set === true)) { s.offline_mode = false; s.offline_user_set = false; }
+    s.offline_mode = s.offline_mode === true;
+    delete s.api_key;
+    return s;
   }
   // 같은 성적서(파일 지문+시트)를 다시 올리면 새 분석으로 바꾸되, 사람이 적은 협력사 보정은 남깁니다.
   function upsertReports(db, reps) {
@@ -809,8 +888,7 @@
     var db = emptyDb();
     db.reports = p.reports.filter(function (r) { return r && r.id; });
     db.judgements = p.judgements.filter(function (j) { return j && j.reportId && j.pos; });
-    if (p.settings) db.settings = Object.assign(db.settings, p.settings);
-    delete db.settings.api_key;
+    db.settings = mergeSettings(p.settings);
     return db;
   }
 
@@ -826,7 +904,8 @@
     latestJudgements: latestJudgements, welderNames: welderNames, welderStats: welderStats, pct: pct,
     buildPrompt: buildPrompt, parseAiAnswer: parseAiAnswer, verdictOf: verdictOf,
     toCsv: toCsv, welderCsv: welderCsv, findingsCsv: findingsCsv,
-    emptyDb: emptyDb, upsertReports: upsertReports, addJudgement: addJudgement, makeBackup: makeBackup, parseBackup: parseBackup
+    peerPhotos: peerPhotos, LABELS: LABELS, LABEL_NAME: LABEL_NAME, parseLabelPath: parseLabelPath, labelSummary: labelSummary, labelCsv: labelCsv,
+    emptyDb: emptyDb, mergeSettings: mergeSettings, upsertReports: upsertReports, addJudgement: addJudgement, makeBackup: makeBackup, parseBackup: parseBackup
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.WLogic = api;

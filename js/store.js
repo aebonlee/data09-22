@@ -29,7 +29,7 @@
       var p = JSON.parse(raw);
       if (Array.isArray(p.reports)) db.reports = p.reports;
       if (Array.isArray(p.judgements)) db.judgements = p.judgements;
-      if (p.settings) db.settings = Object.assign(db.settings, p.settings);
+      db.settings = L.mergeSettings(p.settings); // 폐쇄망 모드 기본값 바뀜(2026-09-30) 반영
       if (p.thumbs && typeof p.thumbs === 'object') db.thumbs = p.thumbs;
       if (p._sample) db._sample = true;
     } catch (e) { /* 깨진 값은 무시하고 빈 DB */ }

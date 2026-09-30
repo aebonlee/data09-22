@@ -238,6 +238,14 @@ test('성적서에 용접누락 이상이 기록돼 있으면 사진과 관계�
   const g = L.checkReport(w2Rep({ results: ['OK', 'OK', 'NG', 'OK', 'OK', 'OK', 'OK', 'OK'] }));
   assert.ok(codes(g).includes('RECORDED_NG'));
 });
+test('빈 시트만 있는 파일은 여전히 오류, 작성된 시트 옆의 빈 시트는 참고로 건너뜀', () => {
+  const blank = { id: 'b', fileHash: 'F1', layout: 'W2', part: 'Arm', header: { partner: '', model: '', partNo: '', serial: '', welder: '', inspector: '', dateStatus: 'blank' }, results: { items: [{ item: '용접누락', criterion: '', value: '' }] }, positions: [{ pos: 'A', expected: true, sizes: [], guides: [{}], photos: [] }] };
+  assert.deepEqual(L.allFindings([blank]).b.map(f => f.code), ['EMPTY_SHEET']);
+  const filled = JSON.parse(JSON.stringify(blank)); filled.id = 'f'; filled.part = 'Boom'; filled.header.serial = 'S1';
+  assert.deepEqual(L.allFindings([blank, filled]).b.map(f => f.code), ['UNUSED_SHEET']);
+  const otherFile = JSON.parse(JSON.stringify(filled)); otherFile.fileHash = 'F2';
+  assert.deepEqual(L.allFindings([blank, otherFile]).b.map(f => f.code), ['EMPTY_SHEET']);
+});
 test('결과 빈 항목 → 오류, 머리칸·결과·사진 모두 빈 시트 → 「빈 성적서」 한 건만', () => {
   assert.ok(codes(L.checkReport(w2Rep({ results: ['OK', 'OK'] }))).includes('RESULT_BLANK'));
   const empty = L.analyzeSheet({ fileName: 'a.xlsx', fileHash: 'h', sheetName: 'Arm', grid: w2Grid({ header: { partner: null, model: null, partNo: null, date: null, serial: null, welder: null, inspector: null }, results: [] }), leaves: w2Leaves({ noPhoto: L.POS6 }) });
@@ -348,7 +356,53 @@ test('백업에 API 키가 들어가지 않고, 다른 도구 파일은 거부',
   const b = JSON.stringify(L.makeBackup(db));
   assert.ok(!b.includes('sk-secret'));
   assert.throws(() => L.parseBackup('{"app":"data09-08"}'), /백업 파일이 아닙니다/);
-  assert.equal(L.parseBackup(b).settings.offline_mode, true);
+  assert.equal(L.parseBackup(b).settings.offline_mode, false);
+});
+test('폐쇄망 모드 기본값 바뀜(2026-09-30): 직접 고른 적 없는 옛 설정은 꺼짐, 직접 켠 설정은 켬 유지', () => {
+  assert.equal(L.mergeSettings({ offline_mode: true, ai_model: 'x' }).offline_mode, false);   // 옛 판이 저장한 기본값
+  assert.equal(L.mergeSettings({ offline_mode: true, ai_model: 'x' }).ai_model, 'x');
+  assert.equal(L.mergeSettings({ offline_mode: true, offline_user_set: true }).offline_mode, true);
+  assert.equal(L.mergeSettings({ offline_mode: false, offline_user_set: true }).offline_mode, false);
+  assert.equal(L.mergeSettings(null).offline_mode, false);
+  assert.equal(L.mergeSettings({ api_key: 'sk-x' }).api_key, undefined);
+  // 옛 백업(직접 고른 적 없음)을 복원해도 새 기본값
+  assert.equal(L.parseBackup(JSON.stringify({ app: 'data09-22', reports: [], judgements: [], settings: { offline_mode: true } })).settings.offline_mode, false);
+});
+
+group('같은 위치 다른 제품 사진 (나란히 비교)');
+test('같은 양식·부품·기종의 다른 성적서에서 같은 위치 사진만 모음', () => {
+  const mk = (id, model, part, photos) => ({ id, layout: 'W2', part, header: { model, serial: id }, positions: [{ pos: 'B', photos: photos.map(t => ({ target: t })) }, { pos: 'E', photos: [{ target: id + 'e' }] }] });
+  const a = mk('S57', 'VDK14W', 'Boom', ['a']), b = mk('S58', 'VDK14W', 'Boom', ['b']), c = mk('S60', 'VDK14W', 'Boom', ['c']);
+  const arm = mk('S61', 'VDK14W', 'Arm', ['d']), other = mk('S70', 'MX14', 'Boom', ['e']), noLayout = { id: 'x', layout: null, positions: [] };
+  const peers = L.peerPhotos([a, b, c, arm, other, noLayout], c, 'B');
+  assert.deepEqual(peers.map(p => p.rep.id + ':' + p.photo.target), ['S57:a', 'S58:b']);
+  assert.deepEqual(L.peerPhotos([a, b, c], c, 'E').map(p => p.photo.target), ['S57e', 'S58e']);
+  assert.deepEqual(L.peerPhotos([c], c, 'B'), []);
+});
+
+group('라벨 사진 세트 받기 (2단계 준비)');
+test('폴더 = 라벨, 파일 이름 = 기종_Serial_위치[_번호][_메모]', () => {
+  const x = L.parseLabelPath('라벨사진_20261001/누락/VDK14W_SJ25D60_B_1_윗면비드없음.jpg');
+  assert.deepEqual([x.label, x.model, x.serial, x.pos, x.no, x.memo, x.problems.length], ['suspect', 'VDK14W', 'SJ25D60', 'B', '1', '윗면비드없음', 0]);
+  const y = L.parseLabelPath('정상\\VDK14W_SJ25D58_e.JPG');
+  assert.deepEqual([y.label, y.pos, y.no], ['good', 'E', '']);
+  assert.equal(L.parseLabelPath('경계/LX20_L01_2.png').pos, '2');
+  // macOS 가 보내는 NFD 폴더 이름도 읽음
+  assert.equal(L.parseLabelPath('누락'.normalize('NFD') + '/A_B_C.jpg').label, 'suspect');
+  assert.match(L.parseLabelPath('사진/VDK14W_SJ25D60_B.jpg').problems.join(), /라벨 폴더/);
+  assert.match(L.parseLabelPath('누락/VDK14W_SJ25D60.jpg').problems.join(), /위치/);
+  assert.match(L.parseLabelPath('누락/IMG_0001.jpg').problems.join(), /위치/);
+  assert.equal(L.parseLabelPath('누락/.DS_Store').skip, true);
+  assert.equal(L.parseLabelPath('누락/.DS_Store').problems.length, 0);
+});
+test('라벨 요약: 위치별 개수 · 이름 틀린 파일 · 같은 사진 자리에 엇갈린 라벨 · CSV', () => {
+  const s = L.labelSummary(['a/정상/V_S58_B.jpg', 'a/정상/V_S58_E.jpg', 'a/누락/V_S60_B.jpg', 'a/누락/V_S60_E_1.jpg', 'a/정상/V_S60_E_2.jpg', 'a/누락/IMG_1.jpg', 'a/.DS_Store', 'a/메모.txt']);
+  assert.deepEqual(s.totals, { good: 3, suspect: 2, unclear: 0 });
+  assert.deepEqual(s.table.B, { good: 1, suspect: 1, unclear: 0 });
+  assert.deepEqual(s.bad.map(x => x.file), ['IMG_1.jpg', '메모.txt']);
+  assert.deepEqual(s.conflicts.map(c => c.serial + c.pos + c.labels.join('')), ['S60E누락정상']);
+  assert.deepEqual(s.serials, ['V S58', 'V S60']);
+  assert.match(L.labelCsv(s), /a\/누락\/V_S60_E_1\.jpg,누락,V,S60,E,1,/);
 });
 
 group('예시 엑셀 파일 전체 읽기 (SheetJS + JSZip, 브라우저와 같은 코드)');
@@ -386,7 +440,8 @@ test('예시 3파일 전체 점검: 재사용(같은 파일)·비슷한 사진·
   assert.ok(has('MX14 S04', 'REUSED_PHOTO', 'B') && has('MX14 S02', 'REUSED_PHOTO', 'B'));
   assert.ok(has('MX14 S04', 'SIMILAR_PHOTO', 'D') && has('MX14 S03', 'SIMILAR_PHOTO', 'D'));
   assert.ok(has('Boom', 'LEG_OUT'));
-  assert.deepEqual(F[by('Arm').id].map(f => f.code), ['EMPTY_SHEET']);
+  // 2026-09-30: 같은 파일에 작성된 Boom 이 있으므로 빈 Arm 은 「쓰지 않은 양식」 참고로 건너뜀
+  assert.deepEqual(F[by('Arm').id].map(f => f.level + ':' + f.code), ['info:UNUSED_SHEET']);
   assert.ok(has('내부용접-01', 'MISSING_FIELD'));
   assert.deepEqual(by('내부용접-01').positions.map(p => [p.pos, p.photos.length]), [['1', 2], ['2', 1]]);
   // 그 밖의 사진끼리는 재사용·비슷함으로 잡히지 않아야 합니다(거짓 경보 없음)
@@ -412,7 +467,10 @@ group('폐쇄망 — 외부로 나가는 요청 코드 검사');
   test('index.html 보안 정책이 api.openai.com 밖으로의 연결을 막음', () => {
     assert.match(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'), /connect-src https:\/\/api\.openai\.com;/);
   });
-  test('기본 설정은 폐쇄망 모드 켬', () => assert.equal(L.emptyDb().settings.offline_mode, true));
+  test('기본 설정은 폐쇄망 모드 꺼짐(2026-09-30 제출자 답), 설정에서 켤 수 있음', () => {
+    assert.equal(L.emptyDb().settings.offline_mode, false);
+    assert.match(fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8'), /offline_user_set\s*=\s*true/);
+  });
 }
 
 // ── 실행 ────────────────────────────────────────────────────

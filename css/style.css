@@ -154,7 +154,7 @@ table.edit td.wide input { min-width: 10em; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1b2430; color: #fff; padding: 12px 18px; border-radius: var(--radius); z-index: 100; max-width: calc(100vw - 32px); }
 .toast.error { background: var(--danger); }
 .net-badge { background: #e6f4ea; border-bottom: 1px solid #b7dcc2; color: #144d27; font-size: .9rem; padding: 6px var(--container-pad); text-align: center; }
-.net-badge.ai-on { background: #fff4d6; border-bottom-color: #e8cf85; color: #5a4400; }
+.net-badge.ai-on { background: #eaf1fa; border-bottom-color: #b9cfe8; color: #1d3b5c; }
 .site-footer a { color: inherit; }
 .steps { margin: 0 0 12px; padding-left: 1.4em; }
 .steps li { margin: 4px 0; }
@@ -234,6 +234,13 @@ tr.row-bad td { background: var(--nok-bg); }
 .vbtn-unreadable[aria-pressed="true"] { background: var(--check); border-color: var(--check); color: var(--check-ink); }
 .vbtn.suggested { box-shadow: 0 0 0 3px #8fb4e3; }
 input.memo { width: 100%; min-height: 38px; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--radius); }
+.peer-box { border-top: 1px dashed var(--line); padding-top: 8px; }
+.peer-box summary { cursor: pointer; font-weight: 700; }
+.peer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 6px; }
+.peer-grid figure { margin: 0; min-width: 0; }
+.peer-grid figcaption { font-size: .8rem; color: var(--muted); text-align: center; overflow-wrap: anywhere; }
+.peer-grid .img-btn img { height: 100px; }
+pre.tree { background: #f3f5f8; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; overflow-x: auto; font-size: .88rem; line-height: 1.5; }
 .ai-tools { border-top: 1px dashed var(--line); padding-top: 8px; }
 .ai-tools textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem; margin: 4px 0; }
 .ai-sug { background: #eaf1fa; border-radius: var(--radius); padding: 8px 10px; font-size: .92rem; }

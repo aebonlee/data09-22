@@ -255,3 +255,50 @@ pre.tree { background: #f3f5f8; border: 1px solid var(--line); border-radius: 6p
 .photo-scroll { overflow: auto; max-height: 70vh; border: 1px solid var(--line); border-radius: var(--radius); background: #222; }
 .photo-scroll img { display: block; max-width: none; height: auto; }
 .dialog-wide { width: min(1100px, calc(100vw - 32px)); }
+
+/* ── 표지(hero) · 2026-09-30 제출자 요청 「AI 가 용접하는 사람을 쳐다보는 그림」 ─────────
+   주소가 비어 있을 때(#/ 포함)만 보입니다. html[data-cover] 는 index.html 머리의 한 줄이 첫 그림 전에 정합니다. */
+:root {
+  --hero-bg: #0e1a2b;
+  --hero-bg-2: #15283f;
+  --hero-ink: #f3f6fa;
+  --hero-muted: #bcc7d6;
+  --hero-line: #2c4a6e;
+  --weld: #ff8a1f;
+  --weld-hover: #ffa24d;
+  --weld-soft: #ffc98a;
+  --on-weld: #1a1208;
+  --ai: #5ee1ff;
+}
+html[data-cover="0"] .hero { display: none; }
+.hero {
+  background: radial-gradient(120% 90% at 85% 10%, var(--hero-bg-2) 0%, var(--hero-bg) 60%);
+  background-color: var(--hero-bg);
+  color: var(--hero-ink);
+  border-bottom: 3px solid var(--weld);
+}
+.hero-inner { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: center; padding-top: 28px; padding-bottom: 28px; }
+@media (min-width: 960px) { .hero-inner { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 36px; padding-top: 44px; padding-bottom: 40px; } }
+.hero-copy { min-width: 0; }
+.hero-eyebrow { display: inline-block; margin: 0 0 14px; padding: 3px 12px; border: 1px solid #7a4a1f; border-radius: 999px; color: var(--weld-soft); font-size: .86rem; font-weight: 700; }
+.hero-title { margin: 0 0 14px; color: var(--hero-ink); font-size: clamp(1.6rem, 1.05rem + 2.1vw, 2.55rem); line-height: 1.28; letter-spacing: -.01em; }
+.hero-title em { font-style: normal; color: var(--weld); }
+.hero-lead { color: var(--hero-muted); font-size: 1.03rem; margin: 0 0 20px; }
+.hero-actions { gap: 10px; }
+.btn-weld { background: var(--weld); border-color: var(--weld); color: var(--on-weld); font-weight: 800; }
+.btn-weld:hover { background: var(--weld-hover); border-color: var(--weld-hover); }
+.btn-ghost { background: transparent; border-color: #6c7f99; color: var(--hero-ink); }
+.btn-ghost:hover { border-color: var(--hero-ink); background: rgba(255, 255, 255, .06); }
+.hero .btn:focus-visible { outline: 3px solid var(--ai); outline-offset: 2px; }
+.hero-points { display: flex; flex-wrap: wrap; gap: 6px 8px; list-style: none; margin: 18px 0 12px; padding: 0; }
+.hero-points li { display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px 3px 10px; border: 1px solid var(--hero-line); border-radius: 999px; background: rgba(11, 22, 38, .6); color: var(--hero-ink); font-size: .88rem; white-space: nowrap; }
+.hero-points li::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--weld); flex: none; }
+.hero-note { margin: 0; color: var(--hero-muted); font-size: .86rem; }
+.hero-figure { margin: 0; min-width: 0; }
+.hero-art { display: block; width: 100%; height: auto; aspect-ratio: 800 / 560; border-radius: 14px; border: 1px solid var(--hero-line); box-shadow: 0 18px 48px rgba(0, 0, 0, .35); background: #0f1c2f; }
+.hero-art text { font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif; }
+@media (max-width: 560px) {
+  .hero-inner { gap: 18px; padding-top: 22px; padding-bottom: 22px; }
+  .hero-art { border-radius: 10px; }
+  .hero-actions .btn { flex: 1 1 auto; }
+}

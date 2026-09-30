@@ -607,6 +607,8 @@
     var name = m ? m[1] : 'upload', params = {};
     if (m && m[2]) m[2].split('&').forEach(function (kv) { var p = kv.split('='); params[p[0]] = decodeURIComponent(p[1] || ''); });
     var route = ROUTES.filter(function (r) { return r[0] === name; })[0] || ROUTES[0];
+    // 표지: 주소가 비어 있을 때(#/ 포함)만. 아래에는 첫 작업 화면(성적서 올리기)이 그대로 이어집니다
+    document.documentElement.setAttribute('data-cover', m ? '0' : '1');
     var nav = document.getElementById('nav'); nav.textContent = '';
     ROUTES.forEach(function (r) { nav.appendChild(h('a', { href: '#/' + r[0], 'aria-current': r[0] === route[0] ? 'page' : null }, r[1])); });
     main.textContent = '';
@@ -616,6 +618,8 @@
     document.getElementById('sampleBanner').hidden = !db._sample;
   }
   window.addEventListener('hashchange', function () { render(); window.scrollTo(0, 0); });
+  var heroSample = document.getElementById('heroSample');
+  if (heroSample) heroSample.addEventListener('click', function () { go('#/upload'); loadSamples(); });
   if (!S.available()) { var sb = document.getElementById('storeBanner'); sb.textContent = '이 브라우저에서는 저장소를 쓸 수 없어, 창을 닫으면 내용이 사라집니다.'; sb.hidden = false; }
   render();
 })();

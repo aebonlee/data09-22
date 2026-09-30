@@ -8,13 +8,16 @@
   <meta name="robots" content="noindex">
   <!-- 폐쇄망 보장: 외부로 연결할 수 있는 곳은 AI 도우미의 api.openai.com 뿐(폐쇄망 모드에서는 그마저 부르지 않음) -->
   <meta http-equiv="Content-Security-Policy" content="connect-src https://api.openai.com; object-src 'none'; base-uri 'none'">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
+  <!-- 표지는 주소가 비어 있을 때(#/ 포함)만 보입니다. 첫 그림 전에 정해 두어 화면이 밀리지 않게 합니다 -->
+  <script>document.documentElement.setAttribute('data-cover', /^#\/[a-z]/.test(location.hash) ? '0' : '1');</script>
 </head>
 <body>
   <a class="skip" href="#main">본문으로 건너뛰기</a>
   <header class="site-header">
     <div class="inner header-inner">
-      <a class="brand" href="#/upload">
+      <a class="brand" href="#/">
         <span class="brand-name">용접누락 방지 검출</span>
         <span class="brand-sub">내부용접 검사성적서 · 규칙 점검 · 위치별 사진 판정 · 용접사별 누적</span>
       </a>
@@ -22,6 +25,301 @@
     </div>
   </header>
 
+  <section class="hero" id="hero" aria-labelledby="heroTitle">
+    <div class="inner hero-inner">
+      <div class="hero-copy">
+        <p class="hero-eyebrow">내부용접 검사성적서 점검 도구 · 1단계</p>
+        <h1 id="heroTitle" class="hero-title">용접 사진, 사람이 판정하기 전에 <em>먼저 걸러 봅니다</em></h1>
+        <p class="hero-lead">협력사 내부용접 검사성적서(엑셀)를 올리면 위치별 사진 누락·빈칸·각장 기준·같은 사진 재사용을 규칙으로 먼저 점검하고, 사람이 판정한 결과를 용접사별로 쌓습니다.</p>
+        <div class="btn-row hero-actions">
+          <a class="btn btn-weld" href="#/upload">성적서 점검 시작</a>
+          <button class="btn btn-ghost" type="button" id="heroSample">예시 성적서로 둘러보기</button>
+        </div>
+        <ul class="hero-points" aria-label="이 도구가 하는 일">
+          <li>위치 A~F 사진 누락</li>
+          <li>각장 기준 밖 값</li>
+          <li>같은 사진 재사용</li>
+          <li>용접사별 누적</li>
+        </ul>
+        <p class="hero-note">AI 는 제안만 하고 판정은 사람이 확정합니다 · 성적서·사진은 이 브라우저 안에서만 읽습니다</p>
+      </div>
+      <figure class="hero-figure">
+        <svg class="hero-art" id="heroArt" viewBox="0 0 800 560" role="img" aria-labelledby="heroArtTitle heroArtDesc">
+          <title id="heroArtTitle">용접사를 지켜보는 AI</title>
+          <desc id="heroArtDesc">보호구(용접 면, 가죽 앞치마, 장갑)를 갖춘 용접사가 작업대에서 강판 이음부를 용접하고, 위쪽의 AI 비전 장치가 용접부를 바라보며 비드 폭·각장·미용접 구간을 표시합니다.</desc>
+          <defs>
+            <linearGradient id="hWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#172a44"/><stop offset="1" stop-color="#0f1c2f"/></linearGradient>
+            <linearGradient id="hFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1829"/><stop offset="1" stop-color="#070f1a"/></linearGradient>
+            <linearGradient id="hSteelTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#aeb9c7"/><stop offset="1" stop-color="#828fa1"/></linearGradient>
+            <linearGradient id="hSteelFace" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6f7c90"/><stop offset=".5" stop-color="#95a1b2"/><stop offset="1" stop-color="#65718a"/></linearGradient>
+            <linearGradient id="hSteelDark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5c687b"/><stop offset="1" stop-color="#3e4859"/></linearGradient>
+            <linearGradient id="hBench" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#44526a"/><stop offset="1" stop-color="#2a3546"/></linearGradient>
+            <linearGradient id="hJacket" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1c3150"/><stop offset="1" stop-color="#34547e"/></linearGradient>
+            <linearGradient id="hApron" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6a4226"/><stop offset=".65" stop-color="#8f5d37"/><stop offset="1" stop-color="#b0743f"/></linearGradient>
+            <linearGradient id="hHelmet" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46536a"/><stop offset=".6" stop-color="#242d3b"/><stop offset="1" stop-color="#141a24"/></linearGradient>
+            <linearGradient id="hGlove" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e0b57c"/><stop offset="1" stop-color="#a8793f"/></linearGradient>
+            <linearGradient id="hBead" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9c1cc"/><stop offset=".6" stop-color="#7c8594"/><stop offset="1" stop-color="#4f5765"/></linearGradient>
+            <linearGradient id="hHeat" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffd58a"/><stop offset=".22" stop-color="#ff8a1f" stop-opacity=".9"/><stop offset=".55" stop-color="#9a4a24" stop-opacity=".5"/><stop offset="1" stop-color="#5a3a3a" stop-opacity="0"/></linearGradient>
+            <linearGradient id="hTank" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2b4660"/><stop offset=".45" stop-color="#4b6f8f"/><stop offset="1" stop-color="#223a52"/></linearGradient>
+            <linearGradient id="hRobot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7fb"/><stop offset="1" stop-color="#b3c0d0"/></linearGradient>
+            <linearGradient id="hCone" gradientUnits="userSpaceOnUse" x1="616" y1="176" x2="575" y2="392"><stop offset="0" stop-color="#5ee1ff" stop-opacity=".40"/><stop offset="1" stop-color="#5ee1ff" stop-opacity=".05"/></linearGradient>
+            <radialGradient id="hGlow"><stop offset="0" stop-color="#ffe7b8" stop-opacity=".9"/><stop offset=".16" stop-color="#ffb14d" stop-opacity=".5"/><stop offset=".48" stop-color="#ff8a1f" stop-opacity=".14"/><stop offset="1" stop-color="#ff8a1f" stop-opacity="0"/></radialGradient>
+            <radialGradient id="hCore"><stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="#fff4cf"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
+            <radialGradient id="hVignette" cx=".55" cy=".6" r=".75"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
+          </defs>
+
+          <!-- 벽·바닥 -->
+          <rect width="800" height="560" fill="url(#hWall)"/>
+          <g stroke="#1d3150" stroke-width="2">
+            <path d="M120,0 V470 M330,0 V470 M540,0 V470"/>
+          </g>
+          <rect y="312" width="800" height="8" fill="#132339"/>
+          <g fill="#28405f"><circle cx="40" cy="316" r="2"/><circle cx="220" cy="316" r="2"/><circle cx="440" cy="316" r="2"/><circle cx="650" cy="316" r="2"/></g>
+          <rect y="470" width="800" height="90" fill="url(#hFloor)"/>
+          <path d="M0,470 H800" stroke="#223a5c" stroke-width="2"/>
+          <g stroke="#15263e" stroke-width="1.5"><path d="M60,560 L180,470 M300,560 L360,470 M560,560 L540,470 M800,540 L720,470"/></g>
+
+          <!-- 공구 걸이판 · 매달린 조명 -->
+          <g stroke="#0a121e" stroke-width="2" stroke-linejoin="round">
+            <rect x="34" y="150" width="136" height="104" rx="6" fill="#16283f"/>
+          </g>
+          <g fill="#0f1d30"><circle cx="50" cy="166" r="2"/><circle cx="70" cy="166" r="2"/><circle cx="90" cy="166" r="2"/><circle cx="110" cy="166" r="2"/><circle cx="130" cy="166" r="2"/><circle cx="150" cy="166" r="2"/><circle cx="50" cy="238" r="2"/><circle cx="70" cy="238" r="2"/><circle cx="90" cy="238" r="2"/><circle cx="110" cy="238" r="2"/><circle cx="130" cy="238" r="2"/><circle cx="150" cy="238" r="2"/></g>
+          <g fill="#2f4870" stroke="#0a121e" stroke-width="1.5" stroke-linejoin="round">
+            <rect x="57" y="184" width="7" height="50" rx="3"/>
+            <rect x="44" y="174" width="32" height="12" rx="3"/>
+            <rect x="93" y="188" width="8" height="40" rx="3"/>
+            <circle cx="97" cy="182" r="10"/>
+            <circle cx="97" cy="232" r="7"/>
+            <rect x="126" y="176" width="10" height="34" rx="4"/>
+            <rect x="122" y="208" width="18" height="10" rx="2"/>
+          </g>
+          <circle cx="97" cy="180" r="4.5" fill="#16283f"/>
+          <path d="M94,172 H100 V178 H94 Z" fill="#16283f"/>
+          <g stroke="#4c6690" stroke-width="1.5"><path d="M124,218 V230 M128,218 V230 M132,218 V230 M136,218 V230 M140,218 V230"/></g>
+          <polygon points="214,96 286,96 400,470 110,470" fill="#dbe7f5" opacity=".045"/>
+          <path d="M250,0 V68" stroke="#0a121e" stroke-width="3"/>
+          <path d="M232,68 H268 L288,96 H212 Z" fill="#33445c" stroke="#0a121e" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M238,72 H262" stroke="#55698a" stroke-width="2" stroke-linecap="round"/>
+          <ellipse cx="250" cy="97" rx="30" ry="4" fill="#fff1d0" opacity=".9"/>
+
+          <!-- 가스 용기·용접기 -->
+          <g stroke="#0a121e" stroke-width="2.5" stroke-linejoin="round">
+            <path d="M178,508 V300 C178,276 214,276 214,300 V508 Z" fill="url(#hTank)"/>
+            <rect x="178" y="322" width="36" height="8" fill="#6d8fae" stroke="none"/>
+            <rect x="190" y="252" width="12" height="26" rx="2" fill="#56657a"/>
+            <ellipse cx="196" cy="252" rx="13" ry="4" fill="#7a889c"/>
+          </g>
+          <path d="M202,262 C236,252 226,380 150,408" fill="none" stroke="#10151c" stroke-width="3.5"/>
+          <g stroke="#0a121e" stroke-width="2.5" stroke-linejoin="round">
+            <path d="M36,414 L48,402 H176 L164,414 Z" fill="#35486a"/>
+            <path d="M164,414 L176,402 V496 L164,508 Z" fill="#1a263a"/>
+            <rect x="36" y="414" width="128" height="94" rx="4" fill="#26364f"/>
+            <rect x="50" y="426" width="54" height="24" rx="3" fill="#0b1626"/>
+            <circle cx="132" cy="438" r="9" fill="#3b4b63"/>
+            <circle cx="132" cy="468" r="7" fill="#3b4b63"/>
+            <circle cx="150" cy="490" r="5" fill="#11161d"/>
+          </g>
+          <text x="77" y="443" text-anchor="middle" font-size="14" font-weight="700" fill="#ffb35c" font-family="ui-monospace, Menlo, Consolas, monospace">215A</text>
+          <g stroke="#1a263a" stroke-width="2.5"><path d="M50,466 H110 M50,476 H110 M50,486 H110"/></g>
+          <path d="M132,431 V437" stroke="#cfd8e3" stroke-width="2" stroke-linecap="round"/>
+          <g fill="#0a121e"><circle cx="54" cy="510" r="6"/><circle cx="146" cy="510" r="6"/></g>
+
+          <!-- 토치 케이블 (용접기 → 토치) -->
+          <path d="M150,490 C210,540 330,540 376,476 C400,440 404,338 434,298" fill="none" stroke="#0b0f15" stroke-width="10" stroke-linecap="round"/>
+          <path d="M150,490 C210,540 330,540 376,476 C400,440 404,338 434,298" fill="none" stroke="#2a3340" stroke-width="2" stroke-linecap="round" transform="translate(-2,-2)"/>
+
+          <!-- 작업대 -->
+          <ellipse cx="556" cy="514" rx="246" ry="9" fill="#000" opacity=".35"/>
+          <g stroke="#0a121e" stroke-width="2.5" stroke-linejoin="round">
+            <rect x="764" y="396" width="12" height="108" fill="#1f2937"/>
+            <rect x="346" y="414" width="16" height="98" fill="url(#hBench)"/>
+            <rect x="744" y="414" width="16" height="98" fill="url(#hBench)"/>
+            <path d="M362,470 H744" stroke-width="8" stroke="#0a121e"/>
+            <path d="M362,470 H744" stroke-width="4" stroke="#3a475b"/>
+            <path d="M346,384 H790 L776,400 H330 Z" fill="url(#hSteelTop)"/>
+            <rect x="330" y="400" width="446" height="16" fill="#3a4658"/>
+          </g>
+          <path d="M340,392 H780" stroke="#c8d1dc" stroke-width="1" opacity=".5"/>
+
+          <!-- 강판: 아래판 + 세운 판(T 이음) -->
+          <g stroke="#0a121e" stroke-width="2.5" stroke-linejoin="round">
+            <path d="M430,374 H714 L704,386 H420 Z" fill="url(#hSteelTop)"/>
+            <rect x="420" y="386" width="284" height="10" fill="url(#hSteelDark)"/>
+            <path d="M455,300 L463,292 H698 L690,300 Z" fill="#b8c3d0"/>
+            <path d="M690,300 L698,292 V372 L690,380 Z" fill="#4f5b6e"/>
+            <rect x="455" y="300" width="235" height="80" fill="url(#hSteelFace)"/>
+          </g>
+          <g stroke="#c3ccd8" stroke-width="1" opacity=".35"><path d="M480,306 V374 M540,306 V374 M610,306 V374 M660,306 V374"/></g>
+          <!-- 미용접 이음새 · 가접 점 -->
+          <path d="M457,380 H514" stroke="#141a22" stroke-width="3"/>
+          <g fill="#6b7482" stroke="#0a121e" stroke-width="1"><circle cx="470" cy="379" r="3"/><circle cx="498" cy="379" r="3"/></g>
+          <!-- 비드(용접 끝난 구간) -->
+          <rect x="518" y="372" width="172" height="13" rx="6.5" fill="url(#hBead)" stroke="#0a121e" stroke-width="2"/>
+          <g fill="none" stroke="#dfe5ec" stroke-width="1.3" opacity=".55" id="heroRipples">
+            <path d="M534,373.5 q4,5 0,10 M543,373.5 q4,5 0,10 M552,373.5 q4,5 0,10 M561,373.5 q4,5 0,10 M570,373.5 q4,5 0,10 M579,373.5 q4,5 0,10 M588,373.5 q4,5 0,10 M597,373.5 q4,5 0,10 M606,373.5 q4,5 0,10 M615,373.5 q4,5 0,10 M624,373.5 q4,5 0,10 M633,373.5 q4,5 0,10 M642,373.5 q4,5 0,10 M651,373.5 q4,5 0,10 M660,373.5 q4,5 0,10 M669,373.5 q4,5 0,10 M678,373.5 q4,5 0,10"/>
+          </g>
+          <rect x="518" y="372" width="80" height="13" rx="6.5" fill="url(#hHeat)"/>
+
+          <!-- 용접사 -->
+          <ellipse cx="298" cy="513" rx="64" ry="6" fill="#000" opacity=".45"/>
+          <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <!-- 먼 쪽 다리 -->
+            <path d="M282,366 L268,440 L266,496" stroke="#070d16" stroke-width="31"/>
+            <path d="M282,366 L268,440 L266,496" stroke="#172538" stroke-width="26"/>
+            <!-- 먼 쪽 팔 (판을 잡은 손) -->
+            <path d="M318,264 L352,326 L418,362" stroke="#070d16" stroke-width="25"/>
+            <path d="M318,264 L352,326 L418,362" stroke="#1b2d48" stroke-width="20"/>
+          </g>
+          <g stroke="#4f3416" stroke-width="2" stroke-linejoin="round">
+            <path d="M404,352 L424,348 L428,372 L408,376 Z" fill="#b3854b"/>
+            <path d="M420,354 C434,350 446,358 446,368 C446,378 434,382 424,378 Z" fill="#b3854b"/>
+          </g>
+          <g stroke="#070d16" stroke-width="2.5" stroke-linejoin="round">
+            <path d="M252,492 H282 C294,494 302,502 304,512 H250 Z" fill="#141920"/>
+            <!-- 몸통(방염 작업복) -->
+            <path d="M284,258 C296,246 322,242 344,246 C356,262 358,296 350,330 C346,350 338,366 330,378 H276 C268,340 272,290 284,258 Z" fill="url(#hJacket)"/>
+          </g>
+          <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <!-- 가까운 쪽 다리 -->
+            <path d="M300,368 L316,440 L310,496" stroke="#070d16" stroke-width="31"/>
+            <path d="M300,368 L316,440 L310,496" stroke="#22344d" stroke-width="26"/>
+            <path d="M306,380 L318,436" stroke="#34507a" stroke-width="4" opacity=".6"/>
+          </g>
+          <g stroke="#070d16" stroke-width="2.5" stroke-linejoin="round">
+            <path d="M296,492 H326 C338,494 346,502 348,512 H294 Z" fill="#1d232c"/>
+          </g>
+          <path d="M326,498 C336,500 342,505 344,510" stroke="#3a4452" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <!-- 가죽 앞치마 -->
+          <path d="M320,262 C338,258 350,266 353,284 C357,320 353,352 347,376 C354,402 358,430 358,460 H306 C302,432 298,402 300,378 C296,350 300,300 310,274 Z" fill="url(#hApron)" stroke="#3a2414" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M324,272 C338,270 344,278 346,290 C349,322 346,350 340,374 C346,400 350,428 350,452 H312" fill="none" stroke="#d99a5f" stroke-width="1.3" stroke-dasharray="3 4" opacity=".7"/>
+          <path d="M340,382 L332,458" stroke="#4d2f19" stroke-width="2" opacity=".8"/>
+          <path d="M302,338 L280,336" stroke="#4d2f19" stroke-width="4" stroke-linecap="round"/>
+          <path d="M320,262 L342,236" stroke="#4d2f19" stroke-width="4" stroke-linecap="round"/>
+          <!-- 목·깃 -->
+          <path d="M334,236 L356,230 L362,252 L338,258 Z" fill="#15253a" stroke="#070d16" stroke-width="2.5" stroke-linejoin="round"/>
+          <!-- 용접 면(자동 차광) -->
+          <g transform="rotate(18 372 206)">
+            <path d="M338,212 C334,186 352,170 375,170 C394,170 406,182 410,200 L414,228 C415,237 408,243 399,243 L360,245 C347,245 341,232 338,212 Z" fill="url(#hHelmet)" stroke="#070d16" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M350,186 C360,176 380,173 396,181" fill="none" stroke="#7a89a0" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+            <path d="M404,190 L411,196 L414,222 L406,220 Z" fill="#0b1119" stroke="#070d16" stroke-width="1.5"/>
+            <path id="heroVisor" d="M406,196 L411,199 L413,219 L407,217 Z" fill="#ffb347" opacity=".75"/>
+            <path d="M366,230 L400,228" stroke="#ff8a1f" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+            <circle cx="363" cy="208" r="9" fill="#2a3342" stroke="#070d16" stroke-width="2"/>
+            <circle cx="363" cy="208" r="3.5" fill="#8792a3"/>
+            <path d="M354,208 H340" stroke="#3a4454" stroke-width="3" stroke-linecap="round"/>
+          </g>
+          <!-- 가까운 쪽 팔 -->
+          <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <path d="M330,262 L378,312 L432,316" stroke="#070d16" stroke-width="29"/>
+            <path d="M330,262 L378,312 L432,316" stroke="#2d4a70" stroke-width="24"/>
+            <path d="M334,256 L380,302 L428,306" stroke="#4a6fa0" stroke-width="3.5" opacity=".7"/>
+          </g>
+          <!-- 토치 손잡이(주먹 뒤) -->
+          <path d="M434,296 L474,332" stroke="#070d16" stroke-width="16" stroke-linecap="round"/>
+          <path d="M434,296 L474,332" stroke="#252c37" stroke-width="12" stroke-linecap="round"/>
+          <!-- 장갑 -->
+          <g stroke="#4f3416" stroke-width="2" stroke-linejoin="round">
+            <path d="M422,300 L446,295 L452,335 L427,340 Z" fill="url(#hGlove)"/>
+            <path d="M444,304 C456,297 471,303 473,316 C475,330 463,339 451,337 C440,335 435,315 444,304 Z" fill="url(#hGlove)"/>
+          </g>
+          <g stroke="#7b5427" stroke-width="1.5" fill="none" stroke-linecap="round"><path d="M452,314 q8,2 15,0 M451,322 q8,2 15,0 M452,330 q7,2 13,0"/></g>
+          <!-- 토치 목·노즐 -->
+          <path d="M470,328 C484,336 494,344 502,354" fill="none" stroke="#070d16" stroke-width="12" stroke-linecap="round"/>
+          <path d="M470,328 C484,336 494,344 502,354" fill="none" stroke="#b9c1cc" stroke-width="8" stroke-linecap="round"/>
+          <path d="M499,351 L515,367" stroke="#070d16" stroke-width="16" stroke-linecap="round"/>
+          <path d="M499,351 L515,367" stroke="#8a93a0" stroke-width="12" stroke-linecap="round"/>
+          <path d="M497,352 L512,367" stroke="#c9d0d9" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+          <path d="M515,368 L519,372" stroke="#c89a5a" stroke-width="7" stroke-linecap="round"/>
+
+          <!-- 아크·용융지 -->
+          <ellipse cx="524" cy="379" rx="10" ry="5" fill="#ffe8b0"/>
+          <circle id="heroGlow" cx="522" cy="377" r="200" fill="url(#hGlow)" opacity=".85"/>
+          <circle id="heroCore" cx="522" cy="377" r="16" fill="url(#hCore)"/>
+          <g id="heroSparksStatic" stroke-linecap="round" fill="none">
+            <path d="M524,374 L548,350" stroke="#fff3cf" stroke-width="2"/>
+            <path d="M526,372 L566,346" stroke="#ffc36b" stroke-width="2"/>
+            <path d="M520,372 L506,340" stroke="#ffd58a" stroke-width="1.8"/>
+            <path d="M528,376 L574,366" stroke="#ff9d3a" stroke-width="1.8"/>
+            <path d="M523,371 L530,334" stroke="#fff3cf" stroke-width="1.6"/>
+            <path d="M530,375 L556,382" stroke="#ff8a1f" stroke-width="1.6"/>
+            <path d="M538,356 L546,350" stroke="#ffb14d" stroke-width="1.6"/>
+            <path d="M584,354 L590,351" stroke="#ff8a1f" stroke-width="1.6"/>
+            <path d="M500,330 L497,324" stroke="#ffb14d" stroke-width="1.6"/>
+          </g>
+          <g id="heroSparks" stroke-linecap="round" fill="none"></g>
+
+          <rect width="800" height="560" fill="url(#hVignette)" pointer-events="none"/>
+          <!-- AI 비전 장치 -->
+          <rect x="560" y="0" width="240" height="12" fill="#223550"/>
+          <rect x="702" y="6" width="40" height="18" rx="4" fill="#33445c" stroke="#0a121e" stroke-width="2"/>
+          <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <path d="M722,22 L724,72 L674,104" stroke="#0a121e" stroke-width="20"/>
+            <path d="M722,22 L724,72 L674,104" stroke="#c7d1de" stroke-width="14"/>
+            <path d="M718,24 L720,70" stroke="#eef3f8" stroke-width="3" opacity=".8"/>
+          </g>
+          <circle cx="724" cy="72" r="12" fill="#e6ecf3" stroke="#0a121e" stroke-width="2.5"/>
+          <circle cx="724" cy="72" r="5" fill="none" stroke="#2bb8dc" stroke-width="2.5"/>
+          <!-- 시선 콘 -->
+          <polygon id="heroCone" points="616,176 448,392 700,392" fill="url(#hCone)"/>
+          <g stroke="#5ee1ff" stroke-width="1.2" stroke-dasharray="4 5" opacity=".55"><path d="M616,176 L448,392 M616,176 L700,392"/></g>
+          <g id="heroScan" opacity="0">
+            <line id="heroScanLine" x1="616" y1="176" x2="600" y2="386" stroke="#9befff" stroke-width="1.8"/>
+            <rect id="heroScanTick" x="588" y="383" width="24" height="4" rx="2" fill="#9befff"/>
+          </g>
+          <!-- 머리 -->
+          <g id="heroBot">
+            <path d="M616,160 L628,168" stroke="#0a121e" stroke-width="12" stroke-linecap="round"/>
+            <path d="M616,160 L628,168" stroke="#98a6b8" stroke-width="7" stroke-linecap="round"/>
+            <path d="M670,90 L676,72" stroke="#0a121e" stroke-width="3" stroke-linecap="round"/>
+            <circle id="heroLed" cx="677" cy="70" r="4.5" fill="#5ee1ff" stroke="#0a121e" stroke-width="1.5"/>
+            <rect x="600" y="90" width="106" height="70" rx="22" fill="url(#hRobot)" stroke="#0a121e" stroke-width="2.5"/>
+            <path d="M614,96 C640,90 676,90 694,96" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>
+            <rect x="610" y="100" width="80" height="48" rx="14" fill="#0b1626" stroke="#0a121e" stroke-width="2"/>
+            <g id="heroEyes" fill="#5ee1ff">
+              <rect x="626" y="112" width="14" height="20" rx="7"/>
+              <rect x="658" y="112" width="14" height="20" rx="7"/>
+            </g>
+            <path d="M642,138 q8,5 16,0" stroke="#5ee1ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".85"/>
+            <circle cx="616" cy="172" r="15" fill="#1a2536" stroke="#0a121e" stroke-width="2.5"/>
+            <circle cx="616" cy="172" r="9.5" fill="#0b1626" stroke="#5ee1ff" stroke-width="2"/>
+            <circle id="heroLens" cx="614" cy="175" r="4.5" fill="#bff4ff"/>
+          </g>
+
+          <!-- 검출 표시 -->
+          <g id="heroBoxBead">
+            <path d="M526,374 V362 H540 M682,362 H696 V374 M696,384 V395 H682 M540,395 H526 V384" fill="none" stroke="#5ee1ff" stroke-width="2.5" stroke-linecap="round"/>
+            <rect x="584" y="330" width="112" height="26" rx="6" fill="#0b1626" stroke="#5ee1ff" stroke-width="1.2"/>
+            <text x="640" y="348" text-anchor="middle" font-size="14" font-weight="700" fill="#bff4ff">비드 폭 <tspan id="heroValBead">7.8</tspan> mm</text>
+          </g>
+          <g id="heroBoxMiss">
+            <path d="M450,366 H516 V395 H450 Z" fill="#ff8a1f" fill-opacity=".12" stroke="#ffa94d" stroke-width="2.2" stroke-dasharray="6 4"/>
+            <rect x="432" y="404" width="102" height="26" rx="6" fill="#0b1626" stroke="#ffa94d" stroke-width="1.2"/>
+            <text x="483" y="422" text-anchor="middle" font-size="14" font-weight="700" fill="#ffc98a">미용접 구간</text>
+          </g>
+          <g id="heroBoxAngle">
+            <path d="M494,374 A26,26 0 0 1 502,356" fill="none" stroke="#5ee1ff" stroke-width="1.8"/>
+            <path d="M486,374 H520" stroke="#5ee1ff" stroke-width="1.2" stroke-dasharray="3 3"/>
+            <path d="M552,318 L512,352" stroke="#5ee1ff" stroke-width="1.2"/>
+            <rect x="540" y="304" width="104" height="26" rx="6" fill="#0b1626" stroke="#5ee1ff" stroke-width="1.2"/>
+            <text x="592" y="322" text-anchor="middle" font-size="14" font-weight="700" fill="#bff4ff">토치 각도 <tspan id="heroValAngle">45</tspan>°</text>
+          </g>
+
+          <!-- AI 판독 창 -->
+          <g id="heroHud">
+            <path d="M588,66 H598 L608,94" fill="none" stroke="#5ee1ff" stroke-width="1.2" opacity=".7"/>
+            <rect x="398" y="22" width="190" height="132" rx="10" fill="#0b1626" fill-opacity=".94" stroke="#2c4a6e" stroke-width="1.5"/>
+            <text x="412" y="46" font-size="14" font-weight="800" fill="#8fe9ff">AI 비전 · 위치 B</text>
+            <circle id="heroHudDot" cx="574" cy="41" r="4" fill="#5ee1ff"/>
+            <path d="M412,56 H574" stroke="#2c4a6e" stroke-width="1"/>
+            <g id="heroRow1"><text x="412" y="78" font-size="13.5" fill="#b9c5d6">비드 폭</text><text x="574" y="78" text-anchor="end" font-size="13.5" font-weight="700" fill="#f3f6fa">7.8 mm</text></g>
+            <g id="heroRow2"><text x="412" y="100" font-size="13.5" fill="#b9c5d6">각장 (기준 6±1)</text><text x="574" y="100" text-anchor="end" font-size="13.5" font-weight="700" fill="#f3f6fa">6.1 mm</text></g>
+            <g id="heroRow3"><text x="412" y="122" font-size="13.5" fill="#b9c5d6">미용접 구간</text><text x="574" y="122" text-anchor="end" font-size="13.5" font-weight="700" fill="#ffc98a">58 mm</text></g>
+            <g id="heroRow4"><text x="412" y="143" font-size="12" fill="#8fe9ff">제안 · 판정은 사람이 확정</text></g>
+          </g>
+        </svg>
+      </figure>
+    </div>
+  </section>
   <div id="netBadge" class="net-badge" role="note">성적서·사진은 이 PC 브라우저 안에서만 읽습니다.</div>
   <div id="sampleBanner" class="sample-banner" hidden>예시 성적서가 들어 있습니다. 가상 협력사·가명(용접사A 등)·코드로 그린 용접 그림으로 만든 시연용 파일이며 실제 자료가 아닙니다.</div>
   <div id="storeBanner" class="store-banner" hidden></div>
@@ -51,5 +349,6 @@
   <script src="js/store.js"></script>
   <script src="js/ai.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/hero.js"></script>
 </body>
 </html>
